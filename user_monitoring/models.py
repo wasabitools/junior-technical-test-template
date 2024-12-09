@@ -30,3 +30,4 @@ class Alerts(BaseModel):
     """
     Defines the schema for the returned alerts object.
     """
+    

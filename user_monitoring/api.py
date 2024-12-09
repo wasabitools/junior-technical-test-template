@@ -5,7 +5,8 @@ Implements /event endpoint
 import sys
 from flask import Blueprint, current_app, request
 
-# from user_monitoring.models import UserEvent
+from user_monitoring.models import UserEvent
+
 
 print(sys.path)
 
@@ -20,19 +21,16 @@ def handle_user_event() -> dict:
     "Handles user event"
     current_app.logger.info("Handling user event.")
     try:
-        req = request.get_json()
-        event_type = req.get("type")
-        amount = req.get("amount")
-        user_id = req.get("user_id")
-        timestamp = req.get("time")
 
-        if not req:
+        event = UserEvent(**request.json or {})
+
+        if not event:
             raise ValueError("No request provided.")
 
-        if event_type == "withdraw" and float(amount) > 100:
+        if event.type == "withdraw" and float(event.amount) > 100:
             alerts.append(1100)
 
-        return {"alert": bool(alerts), "alert_codes": alerts, "user_id": user_id}
+        return {"alert": bool(alerts), "alert_codes": alerts, "user_id": event.user_id}
     except ValueError as e:
         current_app.logger.error(f"Value error: {e}")
         raise
