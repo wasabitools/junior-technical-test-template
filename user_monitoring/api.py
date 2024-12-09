@@ -34,7 +34,7 @@ def handle_user_event() -> dict:
 
         user_activity[event.user_id]["withdrawals"].append(event)
 
-        if (
+        if event.type == "withdraw" and (
             len(user_activity[event.user_id]["withdrawals"]) == 3
         ):  # not sure if it should stop at the first 3 or get activated at every iteration of 3
             three_consecutive_withdrawls = user_activity[event.user_id]["withdrawals"][
@@ -54,7 +54,9 @@ def handle_user_event() -> dict:
         ):  # again not sure as above
             three_increasing_deposits = user_activity[event.user_id]["deposits"][-3:]
             amounts = [d.amount for d in three_increasing_deposits]
-            if amounts == sorted(amounts):
+            if amounts == sorted(
+                amounts
+            ):  # needs refactoring as it appends 300 even for the same amount * 3
                 alerts.append(300)
 
         return {"alert": bool(alerts), "alert_codes": alerts, "user_id": event.user_id}
