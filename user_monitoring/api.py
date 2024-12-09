@@ -21,11 +21,13 @@ def handle_user_event() -> dict:
     "Handles user event"
     current_app.logger.info("Handling user event.")
     try:
-
         event = UserEvent(**request.json or {})
 
         if not event:
             raise ValueError("No request provided.")
+
+        if event.user_id not in user_activity:
+            user_activity[event.user_id] = {"withdrawals": [], "deposits": []}
 
         if event.type == "withdraw" and float(event.amount) > 100:
             alerts.append(1100)

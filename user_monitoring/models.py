@@ -30,4 +30,6 @@ class Alerts(BaseModel):
     """
     Defines the schema for the returned alerts object.
     """
-    
+    alert: bool
+    alert_codes: list
+    user_id: int
