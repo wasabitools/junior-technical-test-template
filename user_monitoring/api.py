@@ -32,6 +32,16 @@ def handle_user_event() -> dict:
         if event.type == "withdraw" and float(event.amount) > 100:
             alerts.append(1100)
 
+        user_activity[event.user_id]["withdrawals"].append(event)
+
+        if (
+            len(user_activity[event.user_id]["withdrawals"]) == 3
+        ):  # not sure if it should stop at the first 3 or get activated at every iteration of 3
+            three_consecutive_withdrawls = user_activity[event.user_id]["withdrawals"][-3:]
+            timestamps = [w.time for w in three_consecutive_withdrawls]
+            if sorted(timestamps) == timestamps:
+                alerts.append(30)
+
         return {"alert": bool(alerts), "alert_codes": alerts, "user_id": event.user_id}
     except ValueError as e:
         current_app.logger.error(f"Value error: {e}")
