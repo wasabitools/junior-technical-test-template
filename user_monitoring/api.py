@@ -59,7 +59,17 @@ def handle_user_event() -> dict:
             ):  # needs refactoring as it appends 300 even for the same amount * 3
                 alerts.append(300)
 
+        deposits_window = 0.0
+        for deposit in user_activity[event.user_id]["deposits"]:
+            if event.time - deposit.time <= 30:
+                deposits_window += float(deposit.amount)
+            if deposits_window > 200:
+                alerts.append(123)
+
         return {"alert": bool(alerts), "alert_codes": alerts, "user_id": event.user_id}
     except ValueError as e:
         current_app.logger.error(f"Value error: {e}")
         raise
+
+
+# TODO : fix persisting user_id / refactor to separate concerns / add tests / edit README
