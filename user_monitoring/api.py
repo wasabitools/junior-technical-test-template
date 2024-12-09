@@ -45,9 +45,17 @@ def handle_user_event() -> dict:
                 alerts.append(30)
 
         if event.type == "deposit":
-            amount = float(event.amount)
+            float(event.amount)
 
         user_activity[event.user_id]["deposits"].append(event)
+
+        if (
+            len(user_activity[event.user_id]["deposits"]) == 3
+        ):  # again not sure as above
+            three_increasing_deposits = user_activity[event.user_id]["deposits"][-3:]
+            amounts = [d.amount for d in three_increasing_deposits]
+            if amounts == sorted(amounts):
+                alerts.append(300)
 
         return {"alert": bool(alerts), "alert_codes": alerts, "user_id": event.user_id}
     except ValueError as e:
