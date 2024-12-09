@@ -25,6 +25,9 @@ def handle_user_event() -> dict:
 
         if not all(key in req for key in ["type", "amount", "user_id", "time"]):
             raise KeyError("Missing required fields")
+        
+        if not isinstance(float(amount), float):
+            raise ValueError("Value of amount couldn't get converted to float.")
 
         return {
             "event_type": event_type,
