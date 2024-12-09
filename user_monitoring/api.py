@@ -2,10 +2,17 @@
 Implements /event endpoint
 """
 
+import sys
 from flask import Blueprint, current_app, request
 
+# from user_monitoring.models import UserEvent
+
+print(sys.path)
 
 api = Blueprint("api", __name__)
+
+user_activity: dict = {}
+alerts = []
 
 
 @api.post("/event")
@@ -14,27 +21,18 @@ def handle_user_event() -> dict:
     current_app.logger.info("Handling user event.")
     try:
         req = request.get_json()
+        event_type = req.get("type")
+        amount = req.get("amount")
+        user_id = req.get("user_id")
+        timestamp = req.get("time")
 
         if not req:
             raise ValueError("No request provided.")
 
-        user_id = req["user_id"]
-        event_type = req["type"]
-        amount = req["amount"]
-        timestamp = req["time"]
+        if event_type == "withdraw" and float(amount) > 100:
+            alerts.append(1100)
 
-        if not all(key in req for key in ["type", "amount", "user_id", "time"]):
-            raise KeyError("Missing required fields")
-        
-        if not isinstance(float(amount), float):
-            raise ValueError("Value of amount couldn't get converted to float.")
-
-        return {
-            "event_type": event_type,
-            "amount": amount,
-            "user_id": user_id,
-            "timestamp": timestamp,
-        }
+        return {"alert": bool(alerts), "alert_codes": alerts, "user_id": user_id}
     except ValueError as e:
         current_app.logger.error(f"Value error: {e}")
         raise
