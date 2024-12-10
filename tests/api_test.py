@@ -75,3 +75,12 @@ def test_deposits_within_window(client: FlaskClient) -> None:
     )
     assert response.status_code == 200
     assert response.json == {"alert": True, "alert_codes": [123], "user_id": 1}
+
+
+def test_handle_user_event_no_payload(client: FlaskClient) -> None:
+    """
+    Tests the handling of no payload provided.
+    """
+    payload = {}
+    response = client.post("/event", json=payload)
+    assert response.json == {"Error": "No payload provided"}
