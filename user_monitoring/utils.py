@@ -3,47 +3,65 @@ Helper functions for user activity evaluation and alert creation.
 """
 
 from typing import List
+
+from flask import current_app
 from user_monitoring.models import UserEvent
 
 
 def process_user_event(event: UserEvent, user_activity: dict) -> List[int]:
     """
-    Processes a user event and returns alert codes based on rules:
+    Processes a user event and returns alert codes based on rules.
+    """
+    alerts = []
+
+    if event.type == "withdraw":
+        alerts.extend(process_withdrawal(event, user_activity))
+    if event.type == "deposit":
+        alerts.extend(process_deposit(event, user_activity))
+
+    return alerts
+
+
+def process_withdrawal(event: UserEvent, user_activity: dict) -> List[int]:
+    """
+    Processes withdrawal events and returns alert codes.
 
     Withdrawals:
     • Code: 1100 : A withdrawal amount over 100.
     • Code: 30 : The user makes 3 consecutive withdrawals.
+    """
+    withdrawals_alerts = []
+    withdrawals_activity = user_activity[event.user_id]["withdrawals"]
+    withdrawals_activity.append(event)
+
+    if float(event.amount) > 100:
+        withdrawals_alerts.append(1100)
+    if check_three_consecutive_withdrawals(withdrawals_activity):
+        withdrawals_alerts.append(30)
+
+    return withdrawals_alerts
+
+
+def process_deposit(event: UserEvent, user_activity: dict) -> List[int]:
+    """
+    Processes deposit events and returns alert codes.
 
     Deposits:
     • Code: 300 : The user makes 3 consecutive deposits where each one.
     is larger than the previous deposit (withdrawals in between deposits can be ignored).
     • Code: 123 : The total amount deposited in a 30-second window exceeds 200.
-
     """
-    alerts = []
-    withdrawals_activity = user_activity[event.user_id]["withdrawals"]
+    deposits_alerts = []
     deposits_activity = user_activity[event.user_id]["deposits"]
+    deposits_activity.append(event)
 
-    if event.type == "withdraw":
-        withdrawals_activity.append(event)
+    if check_increasing_deposits(deposits_activity):
+        deposits_alerts.append(300)
 
-        if float(event.amount) > 100:
-            alerts.append(1100)
+    if check_deposits_window(deposits_activity, event.time):
+        deposits_alerts.append(123)
 
-        if check_three_consecutive_withdrawals(withdrawals_activity):
-            alerts.append(30)
-
-    if event.type == "deposit":
-        deposits_activity.append(event)
-        float(event.amount)
-
-        if check_increasing_deposits(deposits_activity):
-            alerts.append(300)
-
-        if check_deposits_window(deposits_activity, event.time):
-            alerts.append(123)
-
-    return alerts
+    return deposits_alerts
 
 
 def check_three_consecutive_withdrawals(withdrawals: List[UserEvent]) -> bool:
