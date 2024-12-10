@@ -84,3 +84,12 @@ def test_handle_user_event_no_payload(client: FlaskClient) -> None:
     payload = {}
     response = client.post("/event", json=payload)
     assert response.json == {"Error": "No payload provided"}
+
+
+def test_handle_user_event_bad_payload(client: FlaskClient) -> None:
+    """
+    Tests the handling of an invalid payload.
+    """
+    payload = {"type": 4, "amount": "100", "user_id": 1, "time": 0}
+    response = client.post("/event", json=payload)
+    assert response.json == {"Error": "Invalid payload"}
