@@ -93,3 +93,25 @@ def test_handle_user_event_bad_payload(client: FlaskClient) -> None:
     payload = {"type": 4, "amount": "100", "user_id": 1, "time": 0}
     response = client.post("/event", json=payload)
     assert response.json == {"Error": "Invalid payload"}
+
+
+def test_combined_alerts(client: FlaskClient) -> None:
+    """
+    Tests triggering combined alerts for withdrawals and deposits.
+    """
+    events = [
+        {"type": "withdraw", "amount": "120.00", "user_id": 1, "time": 1},
+        {"type": "deposit", "amount": "100.00", "user_id": 1, "time": 2},
+        {"type": "deposit", "amount": "150.00", "user_id": 1, "time": 3},
+    ]
+
+    for event in events:
+        client.post("/event", json=event)
+
+    final_response = client.post("/event", json=events[-1])
+    assert final_response.status_code == 200
+    assert final_response.json == {
+        "alert": True,
+        "alert_codes": [1100, 123],
+        "user_id": 1,
+    }
