@@ -15,10 +15,10 @@ def test_handle_large_withdrawal(client: FlaskClient) -> None:
     """
     Tests triggering the 1100 alert for a withdrawal over 100.
     """
-    payload = {"type": "withdraw", "amount": "120.00", "user_id": 1, "time": 10}
+    payload = {"type": "withdraw", "amount": "120.00", "user_id": 2, "time": 10}
     response = client.post("/event", json=payload)
     assert response.status_code == 200
-    assert response.json == {"alert": True, "alert_codes": [1100], "user_id": 1}
+    assert response.json == {"alert": True, "alert_codes": [1100], "user_id": 2}
 
 
 def test_three_consecutive_withdrawals(client: FlaskClient) -> None:
@@ -26,9 +26,9 @@ def test_three_consecutive_withdrawals(client: FlaskClient) -> None:
     Tests triggering 30 alert for three consecutive withdrawals.
     """
     events = [
-        {"type": "withdraw", "amount": "50.00", "user_id": 1, "time": 1},
-        {"type": "withdraw", "amount": "30.00", "user_id": 1, "time": 2},
-        {"type": "withdraw", "amount": "20.00", "user_id": 1, "time": 3},
+        {"type": "withdraw", "amount": "50.00", "user_id": 3, "time": 1},
+        {"type": "withdraw", "amount": "30.00", "user_id": 3, "time": 2},
+        {"type": "withdraw", "amount": "20.00", "user_id": 3, "time": 3},
     ]
 
     for event in events:
@@ -36,7 +36,7 @@ def test_three_consecutive_withdrawals(client: FlaskClient) -> None:
 
     response = client.post("/event", json=events[-1])
     assert response.status_code == 200
-    assert response.json == {"alert": True, "alert_codes": [30], "user_id": 1}
+    assert response.json == {"alert": True, "alert_codes": [30], "user_id": 3}
 
 
 def test_consecutive_increasing_deposits(client: FlaskClient) -> None:
@@ -44,18 +44,18 @@ def test_consecutive_increasing_deposits(client: FlaskClient) -> None:
     Tests triggering 300 alert for consecutive increasing deposits.
     """
     events = [
-        {"type": "deposit", "amount": "10", "user_id": 1, "time": 1},
-        {"type": "deposit", "amount": "11", "user_id": 1, "time": 1},
+        {"type": "deposit", "amount": "10", "user_id": 4, "time": 1},
+        {"type": "deposit", "amount": "11", "user_id": 4, "time": 1},
     ]
 
     for event in events:
         response = client.post("/event", json=event)
 
     response = client.post(
-        "/event", json={"type": "deposit", "amount": "13", "user_id": 1, "time": 1}
+        "/event", json={"type": "deposit", "amount": "13", "user_id": 4, "time": 1}
     )
     assert response.status_code == 200
-    assert response.json == {"alert": True, "alert_codes": [300], "user_id": 1}
+    assert response.json == {"alert": True, "alert_codes": [300], "user_id": 4}
 
 
 def test_deposits_within_window(client: FlaskClient) -> None:
@@ -63,18 +63,18 @@ def test_deposits_within_window(client: FlaskClient) -> None:
     Tests triggering 123 alert for total deposits within a 30-second window.
     """
     events = [
-        {"type": "deposit", "amount": "100.00", "user_id": 1, "time": 1},
-        {"type": "deposit", "amount": "120.00", "user_id": 1, "time": 5},
+        {"type": "deposit", "amount": "100.00", "user_id": 5, "time": 1},
+        {"type": "deposit", "amount": "120.00", "user_id": 5, "time": 5},
     ]
 
     for event in events:
         response = client.post("/event", json=event)
 
     response = client.post(
-        "/event", json={"type": "deposit", "amount": "90.00", "user_id": 1, "time": 10}
+        "/event", json={"type": "deposit", "amount": "90.00", "user_id": 5, "time": 10}
     )
     assert response.status_code == 200
-    assert response.json == {"alert": True, "alert_codes": [123], "user_id": 1}
+    assert response.json == {"alert": True, "alert_codes": [123], "user_id": 5}
 
 
 def test_handle_user_event_no_payload(client: FlaskClient) -> None:
@@ -95,14 +95,14 @@ def test_handle_user_event_bad_payload(client: FlaskClient) -> None:
     assert response.json == {"Error": "Invalid payload"}
 
 
-def test_combined_alerts(client: FlaskClient) -> None:
+def test_combined_alerts_withdrawal_and_deposit(client: FlaskClient) -> None:
     """
     Tests triggering combined alerts for withdrawals and deposits.
     """
     events = [
-        {"type": "withdraw", "amount": "120.00", "user_id": 1, "time": 1},
-        {"type": "deposit", "amount": "100.00", "user_id": 1, "time": 2},
-        {"type": "deposit", "amount": "150.00", "user_id": 1, "time": 3},
+        {"type": "withdraw", "amount": "120.00", "user_id": 6, "time": 10},
+        {"type": "deposit", "amount": "100.00", "user_id": 6, "time": 12},
+        {"type": "deposit", "amount": "150.00", "user_id": 6, "time": 13},
     ]
 
     for event in events:
@@ -112,6 +112,6 @@ def test_combined_alerts(client: FlaskClient) -> None:
     assert final_response.status_code == 200
     assert final_response.json == {
         "alert": True,
-        "alert_codes": [1100, 123],
-        "user_id": 1,
+        "alert_codes": [123, 1100],
+        "user_id": 6,
     }

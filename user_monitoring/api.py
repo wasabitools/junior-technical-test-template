@@ -9,7 +9,7 @@ from user_monitoring.utils import process_user_event
 
 api = Blueprint("api", __name__)
 
-user_activity: dict[int, dict[str, list[UserEvent]]] = {}
+user_activity: dict[int, dict[str, list[UserEvent] | set[int]]] = {}
 
 
 @api.post("/event")
@@ -29,16 +29,22 @@ def handle_user_event() -> dict:
         user_id = event.user_id
 
         if user_id not in user_activity:
-            user_activity[event.user_id] = {"withdrawals": [], "deposits": []}
+            user_activity[event.user_id] = {
+                "withdrawals": [],
+                "deposits": [],
+                "alerts": set(),
+            }
 
         alerts = process_user_event(event, user_activity)
         current_app.logger.info(f"Alerts for {user_id}:{alerts}")
 
-        response = Alerts(alert=bool(alerts), alert_codes=alerts, user_id=user_id)
-        current_app.logger.info(
-            f"Response for user {user_id}: {response.model_dump_json()}"
-        )
+        user_activity[user_id]["alerts"].update(alerts)
 
+        response = Alerts(
+            alert=bool(alerts),
+            alert_codes=user_activity[user_id]["alerts"],
+            user_id=user_id,
+        )
         return response.model_dump()
     except ValueError as e:
         current_app.logger.error(f"Invalid payload: {e}")
