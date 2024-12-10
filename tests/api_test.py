@@ -19,3 +19,21 @@ def test_handle_large_withdrawal(client: FlaskClient) -> None:
     response = client.post("/event", json=payload)
     assert response.status_code == 200
     assert response.json == {"alert": True, "alert_codes": [1100], "user_id": 1}
+
+
+def test_three_consecutive_withdrawals(client: FlaskClient) -> None:
+    """
+    Tests triggering 30 alert for three consecutive withdrawals.
+    """
+    events = [
+        {"type": "withdraw", "amount": "50.00", "user_id": 1, "time": 1},
+        {"type": "withdraw", "amount": "30.00", "user_id": 1, "time": 2},
+        {"type": "withdraw", "amount": "20.00", "user_id": 1, "time": 3},
+    ]
+
+    for event in events:
+        response = client.post("/event", json=event)
+
+    response = client.post("/event", json=events[-1])
+    assert response.status_code == 200
+    assert response.json == {"alert": True, "alert_codes": [30], "user_id": 1}
