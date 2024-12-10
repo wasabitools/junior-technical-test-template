@@ -6,7 +6,6 @@ def test_handle_user_event_success(client: FlaskClient) -> None:
     Tests the successful handling of a user event.
     """
     payload = {"type": "deposit", "amount": "100", "user_id": 1, "time": 0}
-    payload = {"type": "deposit", "amount": "100", "user_id": 1, "time": 0}
     response = client.post("/event", json=payload)
     assert response.status_code == 200
     assert response.json == {"alert": False, "alert_codes": [], "user_id": 1}
@@ -57,3 +56,22 @@ def test_consecutive_increasing_deposits(client: FlaskClient) -> None:
     )
     assert response.status_code == 200
     assert response.json == {"alert": True, "alert_codes": [300], "user_id": 1}
+
+
+def test_deposits_within_window(client: FlaskClient) -> None:
+    """
+    Tests triggering 123 alert for total deposits within a 30-second window.
+    """
+    events = [
+        {"type": "deposit", "amount": "100.00", "user_id": 1, "time": 1},
+        {"type": "deposit", "amount": "120.00", "user_id": 1, "time": 5},
+    ]
+
+    for event in events:
+        response = client.post("/event", json=event)
+
+    response = client.post(
+        "/event", json={"type": "deposit", "amount": "90.00", "user_id": 1, "time": 10}
+    )
+    assert response.status_code == 200
+    assert response.json == {"alert": True, "alert_codes": [123], "user_id": 1}
