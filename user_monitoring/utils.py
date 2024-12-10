@@ -3,8 +3,6 @@ Helper functions for user activity evaluation and alert creation.
 """
 
 from typing import List
-
-from flask import current_app
 from user_monitoring.models import UserEvent
 
 
