@@ -17,11 +17,14 @@ def handle_user_event() -> dict:
     "Handles user event and returns an alert response"
     current_app.logger.info(f"Handling user event: {user_activity}")
 
-    try:
-        event = UserEvent(**request.json or {})
+    payload = request.json
 
-        if not event:
-            raise ValueError("No request provided.")
+    if not payload:
+        current_app.logger.error("No payload provided.")
+        return {"Error": "No payload provided"}
+
+    try:
+        event = UserEvent(**payload)
 
         user_id = event.user_id
 
@@ -38,8 +41,8 @@ def handle_user_event() -> dict:
 
         return response.model_dump()
     except ValueError as e:
-        current_app.logger.error(f"Value error: {e}")
-        raise
+        current_app.logger.error(f"Invalid payload: {e}")
+        return {"Error": "Invalid payload"}
 
 
 # TODO : / add tests / edit README
