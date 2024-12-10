@@ -2,13 +2,9 @@
 Implements /event endpoint
 """
 
-import sys
 from flask import Blueprint, current_app, request
 
-from user_monitoring.models import UserEvent
-
-
-print(sys.path)
+from user_monitoring.models import Alerts, UserEvent
 
 api = Blueprint("api", __name__)
 
@@ -18,7 +14,7 @@ alerts = []
 
 @api.post("/event")
 def handle_user_event() -> dict:
-    "Handles user event"
+    "Handles user event and returns an alert response"
     current_app.logger.info("Handling user event.")
     try:
         event = UserEvent(**request.json or {})
@@ -66,7 +62,13 @@ def handle_user_event() -> dict:
             if deposits_window > 200:
                 alerts.append(123)
 
-        return {"alert": bool(alerts), "alert_codes": alerts, "user_id": event.user_id}
+        response = Alerts(alert=bool(alerts), alert_codes=alerts, user_id=event.user_id)
+
+        current_app.logger.info(
+            f"Response for user {event.user_id}: {response.model_dump_json()}"
+        )
+
+        return response.model_dump()
     except ValueError as e:
         current_app.logger.error(f"Value error: {e}")
         raise
