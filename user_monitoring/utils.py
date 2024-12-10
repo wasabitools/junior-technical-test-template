@@ -69,4 +69,4 @@ def check_deposits_window(deposits: List[UserEvent], event_time: int) -> bool:
     total_amount = sum(
         float(deposit.amount) for deposit in deposits if event_time - deposit.time <= 30
     )
-    return total_amount < 200
+    return total_amount > 200
