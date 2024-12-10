@@ -21,37 +21,52 @@ def process_user_event(event: UserEvent, user_activity: dict) -> List[int]:
 
     """
     alerts = []
+    withdrawals_activity = user_activity[event.user_id]["withdrawals"]
+    deposits_activity = user_activity[event.user_id]["deposits"]
+
     if event.type == "withdraw":
-        user_activity[event.user_id]["withdrawals"].append(event)
+        withdrawals_activity.append(event)
 
         if float(event.amount) > 100:
             alerts.append(1100)
 
-        if (
-            len(user_activity[event.user_id]["withdrawals"]) >= 3
-        ):  # not sure if it should stop at the first 3 or get activated at every iteration of 3
-            three_consecutive_withdrawls = user_activity[event.user_id]["withdrawals"][
-                -3:
-            ]
-            timestamps = [w.time for w in three_consecutive_withdrawls]
-            if sorted(timestamps) == timestamps:
-                alerts.append(30)
+        if check_three_consecutive_withdrawals(withdrawals_activity):
+            alerts.append(30)
 
     if event.type == "deposit":
+        deposits_activity.append(event)
         float(event.amount)
-        user_activity[event.user_id]["deposits"].append(event)
 
-        if len(user_activity[event.user_id]["deposits"]) >= 3:
-            three_increasing_deposits = user_activity[event.user_id]["deposits"][-3:]
-            amounts = [d.amount for d in three_increasing_deposits]
-            if amounts == sorted(amounts):
-                alerts.append(300)
+        if check_increasing_deposits(deposits_activity):
+            alerts.append(300)
 
-        deposits_window = 0.0
-        for deposit in user_activity[event.user_id]["deposits"]:
-            if event.time - deposit.time <= 30:
-                deposits_window += float(deposit.amount)
-            if deposits_window > 200:
-                alerts.append(123)
+        if check_deposits_window(deposits_activity, event.time):
+            alerts.append(123)
 
     return alerts
+
+
+def check_three_consecutive_withdrawals(withdrawals: List[UserEvent]) -> bool:
+    "Checks for the last three consecutive withdrawals from a user event."
+    if len(withdrawals) < 3:
+        return False
+
+    timestamps = [w.time for w in withdrawals[-3:]]
+    return sorted(timestamps) == timestamps
+
+
+def check_increasing_deposits(deposits: List[UserEvent]) -> bool:
+    "Checks for the last three deposits with icnreasing amounts from a user event."
+    if len(deposits) < 3:
+        return False
+
+    amounts = [float(d.amount) for d in deposits[-3:]]
+    return amounts == sorted(amounts) and len(set(amounts)) == len(amounts)
+
+
+def check_deposits_window(deposits: List[UserEvent], event_time: int) -> bool:
+    "Checks for the total amount of deposits within a 30s window is over 200."
+    total_amount = sum(
+        float(deposit.amount) for deposit in deposits if event_time - deposit.time <= 30
+    )
+    return total_amount < 200

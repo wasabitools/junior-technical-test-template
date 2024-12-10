@@ -9,13 +9,15 @@ from user_monitoring.utils import process_user_event
 
 api = Blueprint("api", __name__)
 
-user_activity: dict = {}
+user_activity: dict[int, dict[str, list[UserEvent]]] = {}
 
 
 @api.post("/event")
 def handle_user_event() -> dict:
     "Handles user event and returns an alert response"
     current_app.logger.info("Handling user event.")
+    current_app.logger.info(f"User activity: {user_activity}")
+
     try:
         event = UserEvent(**request.json or {})
 
@@ -26,44 +28,7 @@ def handle_user_event() -> dict:
             user_activity[event.user_id] = {"withdrawals": [], "deposits": []}
 
         alerts = process_user_event(event, user_activity)
-        current_app.logger.info(alerts)
-
-        # if event.type == "withdraw" and float(event.amount) > 100:
-        #     alerts.append(1100)
-
-        # user_activity[event.user_id]["withdrawals"].append(event)
-
-        # if event.type == "withdraw" and (
-        #     len(user_activity[event.user_id]["withdrawals"]) == 3
-        # ):  # not sure if it should stop at the first 3 or get activated at every iteration of 3
-        #     three_consecutive_withdrawls = user_activity[event.user_id]["withdrawals"][
-        #         -3:
-        #     ]
-        #     timestamps = [w.time for w in three_consecutive_withdrawls]
-        #     if sorted(timestamps) == timestamps:
-        #         alerts.append(30)
-
-        # if event.type == "deposit":
-        #     float(event.amount)
-
-        # user_activity[event.user_id]["deposits"].append(event)
-
-        # if (
-        #     len(user_activity[event.user_id]["deposits"]) == 3
-        # ):  # again not sure as above
-        #     three_increasing_deposits = user_activity[event.user_id]["deposits"][-3:]
-        #     amounts = [d.amount for d in three_increasing_deposits]
-        #     if amounts == sorted(
-        #         amounts
-        #     ):  # needs refactoring as it appends 300 even for the same amount * 3
-        #         alerts.append(300)
-
-        # deposits_window = 0.0
-        # for deposit in user_activity[event.user_id]["deposits"]:
-        #     if event.time - deposit.time <= 30:
-        #         deposits_window += float(deposit.amount)
-        #     if deposits_window > 200:
-        #         alerts.append(123)
+        current_app.logger.info(f"Alerts:{alerts}")
 
         response = Alerts(alert=bool(alerts), alert_codes=alerts, user_id=event.user_id)
 
@@ -77,4 +42,4 @@ def handle_user_event() -> dict:
         raise
 
 
-# TODO : fix persisting user_id / refactor to separate concerns / add tests / edit README
+# TODO : / add tests / edit README
