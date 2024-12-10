@@ -43,6 +43,3 @@ def handle_user_event() -> dict:
     except ValueError as e:
         current_app.logger.error(f"Invalid payload: {e}")
         return {"Error": "Invalid payload"}
-
-
-# TODO : / add tests / edit README
