@@ -5,11 +5,11 @@ Implements /event endpoint
 from flask import Blueprint, current_app, request
 
 from user_monitoring.models import Alerts, UserEvent
+from user_monitoring.utils import process_user_event
 
 api = Blueprint("api", __name__)
 
 user_activity: dict = {}
-alerts = []
 
 
 @api.post("/event")
@@ -25,42 +25,45 @@ def handle_user_event() -> dict:
         if event.user_id not in user_activity:
             user_activity[event.user_id] = {"withdrawals": [], "deposits": []}
 
-        if event.type == "withdraw" and float(event.amount) > 100:
-            alerts.append(1100)
+        alerts = process_user_event(event, user_activity)
+        current_app.logger.info(alerts)
 
-        user_activity[event.user_id]["withdrawals"].append(event)
+        # if event.type == "withdraw" and float(event.amount) > 100:
+        #     alerts.append(1100)
 
-        if event.type == "withdraw" and (
-            len(user_activity[event.user_id]["withdrawals"]) == 3
-        ):  # not sure if it should stop at the first 3 or get activated at every iteration of 3
-            three_consecutive_withdrawls = user_activity[event.user_id]["withdrawals"][
-                -3:
-            ]
-            timestamps = [w.time for w in three_consecutive_withdrawls]
-            if sorted(timestamps) == timestamps:
-                alerts.append(30)
+        # user_activity[event.user_id]["withdrawals"].append(event)
 
-        if event.type == "deposit":
-            float(event.amount)
+        # if event.type == "withdraw" and (
+        #     len(user_activity[event.user_id]["withdrawals"]) == 3
+        # ):  # not sure if it should stop at the first 3 or get activated at every iteration of 3
+        #     three_consecutive_withdrawls = user_activity[event.user_id]["withdrawals"][
+        #         -3:
+        #     ]
+        #     timestamps = [w.time for w in three_consecutive_withdrawls]
+        #     if sorted(timestamps) == timestamps:
+        #         alerts.append(30)
 
-        user_activity[event.user_id]["deposits"].append(event)
+        # if event.type == "deposit":
+        #     float(event.amount)
 
-        if (
-            len(user_activity[event.user_id]["deposits"]) == 3
-        ):  # again not sure as above
-            three_increasing_deposits = user_activity[event.user_id]["deposits"][-3:]
-            amounts = [d.amount for d in three_increasing_deposits]
-            if amounts == sorted(
-                amounts
-            ):  # needs refactoring as it appends 300 even for the same amount * 3
-                alerts.append(300)
+        # user_activity[event.user_id]["deposits"].append(event)
 
-        deposits_window = 0.0
-        for deposit in user_activity[event.user_id]["deposits"]:
-            if event.time - deposit.time <= 30:
-                deposits_window += float(deposit.amount)
-            if deposits_window > 200:
-                alerts.append(123)
+        # if (
+        #     len(user_activity[event.user_id]["deposits"]) == 3
+        # ):  # again not sure as above
+        #     three_increasing_deposits = user_activity[event.user_id]["deposits"][-3:]
+        #     amounts = [d.amount for d in three_increasing_deposits]
+        #     if amounts == sorted(
+        #         amounts
+        #     ):  # needs refactoring as it appends 300 even for the same amount * 3
+        #         alerts.append(300)
+
+        # deposits_window = 0.0
+        # for deposit in user_activity[event.user_id]["deposits"]:
+        #     if event.time - deposit.time <= 30:
+        #         deposits_window += float(deposit.amount)
+        #     if deposits_window > 200:
+        #         alerts.append(123)
 
         response = Alerts(alert=bool(alerts), alert_codes=alerts, user_id=event.user_id)
 
